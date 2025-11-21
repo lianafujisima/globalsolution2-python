@@ -25,7 +25,7 @@ metrica_positiva_negativa = {
     "agua": "positivo",
     "atividade_fisica": "positivo"
 }
-
+# Mapeamento colunas Colaborador(renomeando)
 mapeamento_colunas = {
     'id': 'Id',
     'nr_cpf': 'CPF',
@@ -46,7 +46,7 @@ mapeamento_colunas = {
     'dt_criacao': 'Data Criação',
     'dt_ultima_modificacao': 'Data última modificação'
 }
-
+# Mapeamento colunas Métricas(renomeando)
 colunas_renomear ={
     "nr_cpf": "CPF",
     "produtividade": "Produtividade",
@@ -72,12 +72,25 @@ colunas_renomear ={
     "concluidas_atraso": "Tarefas concluídas com atraso"
 }
 
-# ====== Auxiliares ======
+# ====== AUXILIARES ======
 
 def limpa_tela():
+    """
+    Limpa a tela do terminal no Windows e no Linux/macOS.
+    """    
     os.system('cls' if os.name == 'nt' else 'clear')
 
-def valida_nota(msg):
+def valida_nota(msg: str) -> int:
+    """
+    Solicita uma nota de 0 a 10 ao usuário e garante que o valor iserido seja válido. 
+    Enquanto usuário digitar valor inválido, exibe mensagem de erro e solicita resposta novamente.
+
+    Args:
+        msg (str): mensagem exibida ao solicitar a nota.
+
+    Returns:
+        int: valor inteiro entre 0 e 10
+    """    
     while True:
         valor = input(msg).strip()
         if valor.isdigit() and 0 <= int(valor) <= 10:
@@ -85,10 +98,38 @@ def valida_nota(msg):
         print(f"\n {margem} Valor inválido! Digite número inteiro entre 0 e 10.\n")
 
 def validar_cpf(cpf: str) -> bool:
+    """
+    Verifica se a string fornecida contém exatamente 11 dígitos numéricos.
+    A função remove todos os caracteres não numéricos da string cpf.
+
+    Args:
+        cpf (str): String contendo um CPF, com ou sem máscara.
+
+    Returns:
+        bool: True se o CPF possui 11 dígitos numéricos, False caso contrário.
+    """
     cpf_numeros = "".join(c for c in cpf if c.isdigit())
     return len(cpf_numeros) == 11
 
 def cpf_unico(conn: oracledb.Connection, cpf: str) -> bool:
+    """
+    Verifica se um CPF já está cadastrado na tabela T_MNDSH_COLABORADOR.
+    Caso o CPF não exista, retorna True.
+    Caso exista já exista, retorna False.
+
+    Args:
+        conn (oracledb.Connection): Conexão ativa com o banco de dados Oracle.
+        cpf (str): CPF a ser verificado (somente números ou formatado).
+
+    Returns:
+        bool: 
+            - True se o CPF não estiver cadastrado.
+            - False se já existe.
+    Raises:
+        (Exceção interna do OracleDB): Se houver um erro de conexão
+            ou na execução da query, a exceção é capturada e uma
+            mensagem de erro é exibida.
+    """
     cursor = conn.cursor()
     try:
         cursor.execute("SELECT COUNT(*) FROM T_MNDSH_COLABORADOR WHERE nr_cpf = :cpf", {"cpf": cpf})
@@ -101,6 +142,20 @@ def cpf_unico(conn: oracledb.Connection, cpf: str) -> bool:
         cursor.close()
 
 def validar_data(data_str: str) -> bool:
+    """
+    Verifica se uma string representa uma data válida no formato "DD/MM/AAAA".
+    A função tenta converter a string de data para um objeto datetime
+    usando o formato específico.
+
+    Args:
+        data_str: A string que contém a data a ser validada.
+
+    Returns:
+        bool: True se a data for válida no formato especificado; False caso contrário.
+
+    Raises:
+        Não levanta exceções diretamente; captura a exceção ValueError da função datetime.strptime para retornar False.
+    """
     try:
         datetime.strptime(data_str, "%d/%m/%Y")
         return True
@@ -108,9 +163,40 @@ def validar_data(data_str: str) -> bool:
         return False
 
 def data_datetime(data_str: str) -> datetime:
+    """
+    Converte uma string de data no formato "DD/MM/AAAA" para um objeto datetime, utilizando strptime.
+    É recomendado usar a função validar_data() antes de chamar esta função.
+
+    Args:
+        data_str: A string contendo a data a ser convertida.
+
+    Returns:
+        datetime: Um objeto datetime correspondente à data fornecida.
+
+    Raises:
+        ValueError: Se a string de data não estiver no formato "%d/%m/%Y" ou se representar uma data inválida.
+    """
     return datetime.strptime(data_str, "%d/%m/%Y")
 
-def imprimir_tabela(df: pd.DataFrame, titulo="Tabela", tamanhos_wrap=None, colunas_datas=None, colunas_datetime=None, colunas_moeda=None, colunas_exibir=None):
+def imprimir_tabela(df: pd.DataFrame, titulo: str ="Tabela", tamanhos_wrap: dict | None = None, colunas_datas: list[str] | None = None, colunas_datetime: list[str] | None = None, colunas_moeda: list[str] | None = None, colunas_exibir=None) -> None:
+    """
+    Formata e imprime um DataFrame do Pandas no console com opções de customização/formatação.
+
+    Args:
+        df: O DataFrame do Pandas a ser exibido.
+        titulo: O título a ser exibido acima da tabela.
+        tamanhos_wrap: Dicionário onde a chave é a coluna e o valor é o tamanho
+                       máximo (int) para truncar o conteúdo. Padrão é None.
+        colunas_datas: Lista de nomes de colunas para formatar como data (DD/MM/AAAA).
+        colunas_datetime: Lista de nomes de colunas para formatar como datetime.
+        colunas_moeda: Lista de nomes de colunas para formatar como moeda (R$ X.XXX,XX).
+        colunas_exibir: Define quais colunas serão exibidas e como serão agrupadas.
+                        Aceita diferentes formatos (lista simples, lista de listas, lista de tuplas).
+                        Padrão é None.
+
+    Returns:
+        None: A função apenas imprime a saída diretamente no console.
+    """
     df_formatado = df.copy()
     if colunas_datas:
         for coluna in colunas_datas:
@@ -163,6 +249,17 @@ def imprimir_tabela(df: pd.DataFrame, titulo="Tabela", tamanhos_wrap=None, colun
         print(df_formatado.to_string(index=False))
         
 def parse_salario(valor: str) -> float | None:
+    """
+    Converte uma string de salário formatada (R$, pontos, vírgulas) em float.
+    A função limpa a string, removendo símbolos de moeda ('R$') e ajustando separadores decimais.
+
+    Args:
+        valor: A string contendo o valor do salário.
+
+    Returns:
+        float: O valor do salário como número de ponto flutuante.
+        None: Se a string de entrada for vazia, não puder ser convertida para um número válido, ou se o valor for zero ou negativo.
+    """
     try:
         if not valor:
             return None
@@ -174,7 +271,21 @@ def parse_salario(valor: str) -> float | None:
     except ValueError:
         return None
 
-def gerar_dataframe(df: pd.DataFrame):
+def gerar_dataframe(df: pd.DataFrame) -> None:
+    """
+    Apresenta um menu para salvar um DataFrame em diferentes formatos de arquivo.
+    Utiliza a função auxiliar 'menu_opcoes' para solicitar ao usuário o formato de 
+    salvamento (CSV, Excel, JSON ou Não salvar) e, em seguida, solicita o nome do arquivo.
+
+    Args:
+        df: O DataFrame do Pandas (pd.DataFrame) que contém os dados a serem salvos.
+
+    Returns:
+        None: A função realiza a operação de salvamento e não retorna nenhum valor.
+    
+    Dependências:
+        Esta função depende de 'menu_opcoes', 'margem'.
+    """
     opcoes_texto = ["CSV", "Excel", "JSON", "Não salvar"]
     opcoes_valor = ["csv", "excel", "json", "nao"]
     escolha = menu_opcoes("\nDeseja salvar os dados?\n\nEscolha o formato:", opcoes_texto, opcoes_valor)
@@ -200,7 +311,20 @@ def gerar_dataframe(df: pd.DataFrame):
         print(f"\n {margem} Não salvando arquivo.\n")
     input("Pressione ENTER para continuar...")
 
-def perguntar_continuar(acao="tentar novamente"):
+def perguntar_continuar(acao: str ="tentar novamente") -> bool:
+    """
+    Solicita a confirmação do usuário para continuar ou repetir uma ação.
+    A função exibe um menu de Sim/Não, pausando a execução do programa antes de retornar False (Não).
+
+    Args:
+        acao: O texto da ação a ser perguntada. Será exibido como: "Deseja [acao]?". Padrão é "tentar novamente".
+
+    Returns:
+        bool: True se o usuário escolher 'Sim' (continuar/repetir). False se o usuário escolher 'Não' (voltar/parar).
+              
+    Dependências:
+        Esta função depende de 'menu_opcoes2', 'margem' e 'limpa_tela'.
+    """
     while True:
         escolha = menu_opcoes2(f"\n{margem} Deseja {acao}?\n", ["Sim", "Não"], ["1", "2"])
         if escolha == "1":
@@ -211,7 +335,21 @@ def perguntar_continuar(acao="tentar novamente"):
             limpa_tela()
             return False
 
-def perguntar_continuar2(acao="tentar novamente"):
+def perguntar_continuar2(acao: str ="tentar novamente") -> bool:
+    """
+    Solicita a confirmação do usuário para continuar ou repetir uma ação.
+    A função exibe um menu de Sim/Não. Se o usuário escolher 'Sim', a tela é limpa imediatamente 
+    antes de retornar True. Se escolher 'Não', exibe uma mensagem, pausa a execução e limpa a tela.
+
+    Args:
+        acao: O texto da ação a ser perguntada. Será exibido como: "Deseja [acao]?". Padrão é "tentar novamente".
+
+    Returns:
+        bool: True se o usuário escolher 'Sim' (continuar/repetir). False se o usuário escolher 'Não' (voltar/parar).
+              
+    Dependências:
+        Esta função depende de 'menu_opcoes', 'margem' e 'limpa_tela'.
+    """
     while True:
         escolha = menu_opcoes(f"\n{margem} Deseja {acao}?\n", ["Sim", "Não"], ["1", "2"])
         if escolha == "1":
@@ -223,7 +361,24 @@ def perguntar_continuar2(acao="tentar novamente"):
             limpa_tela()
             return False
 
-def buscar_colaborador(conn, identificador: str = None, titulo_menu: str = None):
+def buscar_colaborador(conn: oracledb.Connection, identificador: str | None = None, titulo_menu: str | None = None)-> dict | None:
+    """
+    Busca um colaborador no banco de dados Oracle por ID ou CPF.
+    Esta função entra em um loop contínuo que solicita ao usuário um identificador, quando válido, 
+    valida o formato (ID numérico ou CPF de 11 dígitos) e executa a consulta apropriada na tabela T_MNDSH_COLABORADOR.
+
+    Args:
+        conn: O objeto de conexão ativo com o banco de dados Oracle.
+        identificador: O ID ou CPF do colaborador (string) a ser buscado diretamente. Se for None, o valor é solicitado ao usuário.
+        titulo_menu: O título a ser exibido no menu de solicitação.
+
+    Returns:
+        dict: Um dicionário contendo os dados do colaborador.
+        None: Se o colaborador não for encontrado ou se ocorrer um erro.
+
+    Dependências:
+        Esta função depende de 'perguntar_continuar2' e 'margem'.
+    """
     cursor = conn.cursor()
     try:
         while True:
@@ -273,7 +428,21 @@ def buscar_colaborador(conn, identificador: str = None, titulo_menu: str = None)
     finally:
         cursor.close()
 
-def menu_opcoes(pergunta, opcoes_texto, opcoes_valor):
+def menu_opcoes(pergunta: str, opcoes_texto: list[str], opcoes_valor: list[str]) -> str:
+    """
+    Exibe um menu numerado, solicita a escolha do usuário e retorna o valor correspondente.
+    Em caso de escolha inválida, exibe uma mensagem de erro, pausa a execução
+    ('Pressione ENTER para continuar...') e limpa a tela (limpa_tela()).
+    Continua em loop até que uma escolha válida seja feita.
+
+    Args:
+        pergunta: A mensagem a ser exibida antes das opções.
+        opcoes_texto: Uma lista de strings com os textos a serem exibidos no menu.
+        opcoes_valor: Uma lista de strings com os valores de retorno correspondentes a cada opção.
+
+    Returns:
+        str: O valor de retorno da opção escolhida.
+    """
     while True:
         print(pergunta)
         for i, texto in enumerate(opcoes_texto, 1):
@@ -286,7 +455,20 @@ def menu_opcoes(pergunta, opcoes_texto, opcoes_valor):
             input("Pressione ENTER para continuar...")
             limpa_tela()
 
-def menu_opcoes2(pergunta, opcoes_texto, opcoes_valor):
+def menu_opcoes2(pergunta: str, opcoes_texto: list[str], opcoes_valor: list[str]) -> str:
+    """
+    Exibe um menu numerado, solicita a escolha do usuário e retorna o valor correspondente.
+    Em caso de escolha inválida, exibe a mensagem de erro e retorna ao topo do loop
+    imediatamente, sem pausar ou limpar a tela.
+
+    Args:
+        pergunta: A mensagem a ser exibida antes das opções.
+        opcoes_texto: Uma lista de strings com os textos a serem exibidos no menu.
+        opcoes_valor: Uma lista de strings com os valores de retorno correspondentes.
+
+    Returns:
+        str: O valor de retorno da opção escolhida.
+    """
     while True:
         print(pergunta)
         for i, texto in enumerate(opcoes_texto, 1):
@@ -297,9 +479,18 @@ def menu_opcoes2(pergunta, opcoes_texto, opcoes_valor):
         else:
             print(f"\n {margem} Escolha inválida!\n")
 
-# ====== Conexão ======
+# ====== CONEXÃO ======
 
 def conectarBD() -> oracledb.Connection | None:
+    """
+    Estabelece uma conexão com o banco de dados Oracle.
+    Usa as credenciais e a DSN (Data Source Name) fixas para tentar a conexão.
+    Exibe uma mensagem de sucesso ou uma mensagem de erro em caso de falha.
+
+    Returns:
+        oracledb.Connection: O objeto de conexão ativo, se a conexão for bem-sucedida.
+        None: Se ocorrer qualquer erro durante a tentativa de conexão.
+    """
     try:
         conn = oracledb.connect(user="RM565698", password="200591", dsn="oracle.fiap.com.br:1521/ORCL")
     except Exception as e:
@@ -309,9 +500,21 @@ def conectarBD() -> oracledb.Connection | None:
         print(f"\n {margem} Conexão realizada!\n")
         return conn
 
-# ====== API externa ======
+# ====== API EXTERNA ======
 
 def endereco_cep(cep: str) -> dict | None:
+    """
+    Busca dados de endereço (logradouro, bairro, cidade, estado) usando a API ViaCEP.
+    Limpa e valida o CEP fornecido (deve ter 8 dígitos). Faz uma requisição HTTP
+    para a API e trata a resposta JSON, incluindo casos de CEP não encontrado.
+
+    Args:
+        cep: A string contendo o CEP a ser consultado.
+
+    Returns:
+        dict: Um dicionário com as chaves "logradouro", "bairro", "cidade" e "estado", se o CEP for encontrado.
+        None: Se o CEP for inválido, não for encontrado, ou se ocorrer um erro na consulta.
+    """
     try:
         cep = cep.strip().replace("-", "").replace(".", "")
         if len(cep) != 8 or not cep.isdigit():
@@ -328,9 +531,24 @@ def endereco_cep(cep: str) -> dict | None:
         print(f"\n {margem} Erro ao consultar o CEP: {e}\n")
     return None
 
-# ====== CRUD cadastro ======
+# ====== CRUD CADASTRO ======
 
-def cadastrar_colaborador(conn):
+def cadastrar_colaborador(conn: oracledb.Connection) -> None:
+    """
+    Solicita, valida e insere os dados de um novo colaborador na tabela T_MNDSH_COLABORADOR usando INSERT e trata exceções de conexão.
+
+    Args:
+        conn: O objeto de conexão ativo com o banco de dados Oracle.
+
+    Returns:
+        None: A função realiza a ação de inserção.
+
+    Dependências:
+        - Funções: limpa_tela, perguntar_continuar, perguntar_continuar2, validar_cpf,
+                   cpf_unico, validar_data, data_datetime, menu_opcoes2, endereco_cep,
+                   parse_salario.
+        - Variáveis: margem.
+    """
     while True:
         limpa_tela()
         print("===== CADASTRAR COLABORADOR =====\n")
@@ -505,7 +723,25 @@ def cadastrar_colaborador(conn):
         if not perguntar_continuar2("cadastrar outro colaborador"):
             break
 
-def listar_colaboradores(conn):
+def listar_colaboradores(conn: oracledb.Connection) -> None:
+    """
+    Apresenta opções para buscar e listar dados de colaboradores do banco.
+
+    Oferece modos de listagem por ID/CPF, Todos e Pesquisa Genérica.
+    Os resultados são convertidos em um DataFrame e exibidos de forma formatada imprimir_tabela(),
+    com opção de exportação gerar_dataframe().
+
+    Args:
+        conn: O objeto de conexão ativo com o banco de dados Oracle.
+
+    Returns:
+        None: A função gerencia a exibição e exportação.
+
+    Dependências:
+        - Funções: limpa_tela, menu_opcoes, buscar_colaborador, perguntar_continuar,
+                   perguntar_continuar2, imprimir_tabela, gerar_dataframe.
+        - Variáveis: margem (para formatação de saída).
+    """
     while True:
         cursor = conn.cursor()
         try:
@@ -584,16 +820,12 @@ def listar_colaboradores(conn):
                     ("ENDEREÇO COMPLETO", ['CEP', 'Logradouro', 'Número', 'Bairro', 'Cidade', 'Estado']),
                     ("VÍNCULO EMPREGATÍCIO", ['Salário', 'Cargo', 'Data de admissão', 'Data de demissão', 'Status', 'Data Criação', 'Data última modificação']),
                 ]
-                imprimir_tabela(
-                    df, 
+                imprimir_tabela(df, 
                     titulo="LISTA DE COLABORADORES", 
                     colunas_datas=['Data de nascimento', 'Data de admissão', 'Data de demissão'], 
                     colunas_datetime=['Data Criação', 'Data última modificação'], 
-                    colunas_moeda=['Salário'], 
-                    tamanhos_wrap={'Id': 6, 'CPF': 11, 'Nome': 20, 'Data de nascimento': 10, 'Sexo': 1, 'CEP': 8, 'Logradouro': 25, 'Número': 4, 'Bairro': 20, 'Cidade': 20, 'Estado': 2, 
-                                'Salário': 10, 'Cargo': 15, 'Data de admissão': 10, 'Data de demissão': 10,'Status': 7, 'Data Criação': 16, 'Data última modificação': 16},
-                    colunas_exibir=grupos_personalizados 
-                )
+                    colunas_moeda=['Salário'],
+                    colunas_exibir=grupos_personalizados)
                 gerar_dataframe(df)
         except Exception as e:
             print(f"\n{margem} Erro ao listar colaboradores: {e}\n")
@@ -602,7 +834,27 @@ def listar_colaboradores(conn):
         if not perguntar_continuar2("realizar outra pesquisa/listagem"):
             break
 
-def atualizar_colaborador(conn):
+def atualizar_colaborador(conn: oracledb.Connection) -> None:
+    """
+    Permite ao usuário atualizar um campo específico de um colaborador no banco.
+
+    Primeiro, busca o colaborador buscar_colaborador(). Em seguida, exibe os dados
+    atuais e apresenta um menu para escolher o campo a ser alterado. Cada campo possui
+    sua própria lógica de validação. Alterações no CEP, Data de Demissão e Status
+    são tratadas separadamente com lógica SQL e atualização do dicionário do colaborador.
+
+    Args:
+        conn: O objeto de conexão ativo com o banco de dados Oracle.
+
+    Returns:
+        None: A função realiza a ação de atualização.
+
+    Dependências:
+        - Funções: limpa_tela, buscar_colaborador, imprimir_tabela, menu_opcoes,
+                   menu_opcoes2, perguntar_continuar, perguntar_continuar2, validar_cpf,
+                   cpf_unico, validar_data, data_datetime, endereco_cep, parse_salario.
+        - Variáveis: margem, mapeamento_colunas.
+    """
     while True:
         limpa_tela()
         try:
@@ -620,9 +872,12 @@ def atualizar_colaborador(conn):
                 ]
                 df = pd.DataFrame([colaborador_dicionario.copy()]) 
                 df.rename(columns=mapeamento_colunas, inplace=True)
-                imprimir_tabela(df, titulo="DADOS ATUAIS DO COLABORADOR", colunas_datas=['Data de nascimento', 'Data de admissão', 'Data de demissão'],
-                    colunas_datetime=['Data Criação', 'Data última modificação'], colunas_moeda=['Salário'], tamanhos_wrap={'Id': 6, 'CPF': 11, 'Nome': 20, 'Data de nascimento': 10, 'Sexo': 1, 'CEP': 8, 'Logradouro': 25, 'Número': 4, 'Bairro': 20, 'Cidade': 20, 'Estado': 2, 
-                       'Salário': 10, 'Cargo': 15, 'Data de admissão': 10, 'Data de demissão': 10,'Status': 7, 'Data Criação': 16, 'Data última modificação': 16}, colunas_exibir=grupos_personalizados)
+                imprimir_tabela(df, 
+                                titulo="DADOS ATUAIS DO COLABORADOR", 
+                                colunas_datas=['Data de nascimento', 'Data de admissão', 'Data de demissão'],
+                                colunas_datetime=['Data Criação', 'Data última modificação'], 
+                                colunas_moeda=['Salário'], 
+                                colunas_exibir=grupos_personalizados)
 
                 escolha = menu_opcoes("\nQual campo deseja alterar?", list(campos.keys()) + ["Finalizar"], list(campos.keys()) + ["Finalizar"])
 
@@ -882,8 +1137,23 @@ def atualizar_colaborador(conn):
         if not perguntar_continuar2("atualizar outro colaborador"):
             break
 
-def excluir_colaborador(conn):
-    colunas_amigaveis = list(mapeamento_colunas.values())
+def excluir_colaborador(conn: oracledb.Connection) -> None:
+    """
+    Busca um colaborador por ID/CPF e, após confirmação, o exclui (DELETE) do banco de dados.
+    Exibe os dados completos do colaborador antes de solicitar a confirmação final.
+    Em caso de sucesso, realiza o commit.
+
+    Args:
+        conn: O objeto de conexão ativo com o banco de dados Oracle.
+
+    Returns:
+        None: A função realiza a ação de exclusão.
+
+    Dependências:
+        - Funções: limpa_tela, buscar_colaborador, imprimir_tabela, menu_opcoes2,
+                   perguntar_continuar2.
+        - Variáveis: margem, mapeamento_colunas.
+    """
     while True:
         limpa_tela()
         cursor = conn.cursor()
@@ -899,9 +1169,12 @@ def excluir_colaborador(conn):
                 ]
             df = pd.DataFrame([colaborador.copy()]) 
             df.rename(columns=mapeamento_colunas, inplace=True) 
-            imprimir_tabela(df, titulo=f"DADOS DO COLABORADOR: {colaborador.get('nm_colaborador','')}", colunas_datas=['Data de nascimento', 'Data de admissão', 'Data de demissão'], 
-                            colunas_datetime=['Data Criação', 'Data última modificação'], colunas_moeda=['Salário'], tamanhos_wrap={'Id': 6, 'CPF': 11, 'Nome': 20, 'Data de nascimento': 10, 'Sexo': 1, 'CEP': 8, 'Logradouro': 25, 'Número': 4, 'Bairro': 20, 'Cidade': 20, 'Estado': 2, 
-                       'Salário': 10, 'Cargo': 15, 'Data de admissão': 10, 'Data de demissão': 10,'Status': 7, 'Data Criação': 16, 'Data última modificação': 16}, colunas_exibir=grupos_personalizados)
+            imprimir_tabela(df, 
+                            titulo=f"DADOS DO COLABORADOR: {colaborador.get('nm_colaborador','')}", 
+                            colunas_datas=['Data de nascimento', 'Data de admissão', 'Data de demissão'], 
+                            colunas_datetime=['Data Criação', 'Data última modificação'], 
+                            colunas_moeda=['Salário'], 
+                            colunas_exibir=grupos_personalizados)
             confirmacao = menu_opcoes2(f"\nTem certeza que deseja excluir o colaborador {colaborador.get('nm_colaborador','')} - CPF: {colaborador.get('nr_cpf','')} (ID: {colaborador['id']})?", ["Sim", "Não"], ["S", "N"])
             if confirmacao != "S":
                 print(f"\n {margem} Exclusão cancelada.\n")
@@ -925,7 +1198,24 @@ def excluir_colaborador(conn):
 
 # ADMINISTRADOR 
 
-def adicionar_tarefa_admin(conn):
+def adicionar_tarefa_admin(conn: oracledb.Connection) -> None:
+    """
+    Permite ao administrador selecionar um colaborador e atribuir uma nova tarefa.
+
+    A função solicita o ID/CPF do colaborador buscar_colaborador(), o título, a descrição, a prioridade (via menu) e o prazo.
+    O prazo é validado para garantir que seja uma data futura. A tarefa é
+    inserida na tabela T_MNDSH_TAREFA com o status inicial 'pendente'.
+
+    Args:
+        conn: O objeto de conexão ativo com o banco de dados Oracle.
+
+    Returns:
+        None: A função realiza a ação de inserção.
+
+    Dependências:
+        - Funções: limpa_tela, buscar_colaborador, perguntar_continuar, menu_opcoes2.
+        - Variáveis: margem.
+    """
     while True: 
         limpa_tela()
         cursor = conn.cursor()
@@ -1006,7 +1296,27 @@ def adicionar_tarefa_admin(conn):
         if not perguntar_continuar2("adicionar tarefa para outro colaborador"):
                 break
 
-def listar_tarefas_admin(conn):
+def listar_tarefas_admin(conn: oracledb.Connection) -> None:
+    """
+    Permite ao administrador listar tarefas com opções de filtro.
+    Oferece filtros por:
+    1. Colaborador (todos ou um específico, via buscar_colaborador().
+    2. Status (todas, pendentes, em andamento, concluídas).
+    Os resultados são consultados, formatados em um DataFrame (com colunas adaptadas)
+    e exibidos via imprimir_tabela(), com opção de exportação gerar_dataframe().
+
+    Args:
+        conn: O objeto de conexão ativo com o banco de dados Oracle.
+
+    Returns:
+        None: A função gerencia a exibição e exportação.
+
+    Dependências:
+        - Funções: limpa_tela, menu_opcoes, buscar_colaborador, perguntar_continuar2,
+                   imprimir_tabela, gerar_dataframe.
+        - Variáveis: margem.
+        - Módulo: pandas (pd)
+    """
     while True:
         limpa_tela()
         cursor = conn.cursor()
@@ -1068,7 +1378,11 @@ def listar_tarefas_admin(conn):
             if tarefas:
                 df = pd.DataFrame(tarefas, columns=colunas)
                 limpa_tela()
-                imprimir_tabela(df, titulo=titulo, tamanhos_wrap={"Título": 25, "Descrição": 40}, colunas_datas=["Prazo"], colunas_datetime=["Data Criação", "Data Última Modificação"])
+                imprimir_tabela(df, 
+                                titulo=titulo, 
+                                tamanhos_wrap={"Título":25,"Descrição":40}, 
+                                colunas_datas=["Prazo"], 
+                                colunas_datetime=["Data Criação", "Data Última Modificação"])
                 gerar_dataframe(df)
             else:
                 limpa_tela()
@@ -1082,7 +1396,30 @@ def listar_tarefas_admin(conn):
         if not perguntar_continuar2("realizar outra pesquisa/listagem"):
             break
 
-def atualizar_tarefa_admin(conn):
+def atualizar_tarefa_admin(conn: oracledb.Connection) -> None:
+    """
+    Permite ao administrador atualizar qualquer campo de uma tarefa atribuída a um colaborador.
+
+    O processo envolve:
+    1. Selecionar o colaborador buscar_colaborador().
+    2. Listar todas as tarefas do colaborador.
+    3. O administrador escolhe o ID da tarefa a ser alterada.
+    4. Apresenta um menu para escolha do campo (Título, Descrição, Status, Prioridade, Prazo).
+    5. Cada campo tem validação específica.
+    6. Executa o UPDATE no banco e atualiza a visualização.
+
+    Args:
+        conn: O objeto de conexão ativo com o banco de dados Oracle.
+
+    Returns:
+        None: A função realiza a ação de atualização.
+
+    Dependências:
+        - Funções: limpa_tela, buscar_colaborador, imprimir_tabela, menu_opcoes,
+                   menu_opcoes2, perguntar_continuar, perguntar_continuar2.
+        - Variáveis: margem.
+        - Módulo: pandas (pd).
+    """
     while True:
         cursor = conn.cursor()
         limpa_tela()
@@ -1111,8 +1448,11 @@ def atualizar_tarefa_admin(conn):
 
             while True:
                 limpa_tela()
-                imprimir_tabela(df_tarefas, titulo=f"TAREFAS DE {nome} (CPF: {cpf})", colunas_datas=["Prazo"],
-                    colunas_datetime=["Data Criação", "Data Última Modificação"], tamanhos_wrap={"Título": 25, "Descrição": 40})
+                imprimir_tabela(df_tarefas, 
+                                titulo=f"TAREFAS DE {nome} (CPF: {cpf})", 
+                                tamanhos_wrap={"Título":25,"Descrição":40}, 
+                                colunas_datas=["Prazo"],
+                                colunas_datetime=["Data Criação", "Data Última Modificação"])
                 try:
                     id_tarefa = int(input("\nID da tarefa que deseja atualizar: "))
                 except ValueError:
@@ -1139,7 +1479,10 @@ def atualizar_tarefa_admin(conn):
                     novo_valor = None 
                     limpa_tela()
                     df_tarefa_atual = pd.DataFrame([tarefa], columns=["ID", "Título", "Descrição", "Status", "Prioridade", "Prazo"])
-                    imprimir_tabela(df_tarefa_atual, titulo="DADOS ATUAIS DA TAREFA", colunas_datas=["Prazo"], tamanhos_wrap={"Título": 25, "Descrição": 40})
+                    imprimir_tabela(df_tarefa_atual, 
+                                    titulo="DADOS ATUAIS DA TAREFA", 
+                                    tamanhos_wrap={"Título":25,"Descrição":40}, 
+                                    colunas_datas=["Prazo"])
 
                     escolha = menu_opcoes("\nQual campo deseja alterar?", list(campos.keys()) + ["Finalizar"], list(campos.keys()) + ["Finalizar"])
 
@@ -1220,7 +1563,25 @@ def atualizar_tarefa_admin(conn):
         if not perguntar_continuar2("atualizar tarefa de outro colaborador"):
             break
 
-def excluir_tarefa_admin(conn):
+def excluir_tarefa_admin(conn: oracledb.Connection) -> None:
+    """
+    Permite ao administrador excluir uma tarefa específica atribuída a um colaborador.
+    O administrador seleciona o colaborador buscar_colaborador(), lista suas tarefas
+    e escolhe o ID da tarefa a ser excluída. Uma confirmação final é solicitada antes
+    da execução do DELETE.
+
+    Args:
+        conn: O objeto de conexão ativo com o banco de dados Oracle.
+
+    Returns:
+        None: A função realiza a ação de exclusão.
+
+    Dependências:
+        - Funções: limpa_tela, buscar_colaborador, imprimir_tabela, menu_opcoes2,
+                   perguntar_continuar2.
+        - Variáveis: margem.
+        - Módulo: pandas (pd).
+    """
     while True:
         limpa_tela()
         cursor = conn.cursor()
@@ -1245,7 +1606,11 @@ def excluir_tarefa_admin(conn):
 
                 df = pd.DataFrame(tarefas, columns=["ID", "Título", "Descrição", "Status", "Prioridade", "Prazo", "Data Criação", "Data Última Modificação"])
                 limpa_tela()
-                imprimir_tabela(df, titulo=f"TAREFAS DE {nome}", colunas_datas=["Prazo"], colunas_datetime=["Data Criação","Data Última Modificação"], tamanhos_wrap={"Título":25})
+                imprimir_tabela(df, 
+                                titulo=f"TAREFAS DE {nome}", 
+                                tamanhos_wrap={"Título":25,"Descrição":40}, 
+                                colunas_datas=["Prazo"], 
+                                colunas_datetime=["Data Criação","Data Última Modificação"])
 
                 tarefa = None
                 sair_para_outro_colaborador = False 
@@ -1258,7 +1623,11 @@ def excluir_tarefa_admin(conn):
                             sair_para_outro_colaborador = True
                             break  
                         limpa_tela()
-                        imprimir_tabela(df, titulo=f"TAREFAS DE {nome}", colunas_datas=["Prazo"], colunas_datetime=["Data Criação","Data Última Modificação"], tamanhos_wrap={"Título":25})
+                        imprimir_tabela(df, 
+                                        titulo=f"TAREFAS DE {nome}", 
+                                        tamanhos_wrap={"Título":25,"Descrição":40}, 
+                                        colunas_datas=["Prazo"], 
+                                        colunas_datetime=["Data Criação","Data Última Modificação"])
                         continue
                     cursor.execute("""
                         SELECT ds_titulo 
@@ -1275,7 +1644,11 @@ def excluir_tarefa_admin(conn):
                         tarefa = None
                         break
                     limpa_tela()
-                    imprimir_tabela(df, titulo=f"TAREFAS DE {nome}", colunas_datas=["Prazo"], colunas_datetime=["Data Criação","Data Última Modificação"], tamanhos_wrap={"Título":25})
+                    imprimir_tabela(df, 
+                                    titulo=f"TAREFAS DE {nome}", 
+                                    tamanhos_wrap={"Título":25,"Descrição":40}, 
+                                    colunas_datas=["Prazo"], 
+                                    colunas_datetime=["Data Criação","Data Última Modificação"])
 
                 if sair_para_outro_colaborador:
                     break
@@ -1305,7 +1678,25 @@ def excluir_tarefa_admin(conn):
 
 # COLABORADOR 
 
-def listar_tarefas_colaborador(conn, cpf_colaborador):
+def listar_tarefas_colaborador(conn: oracledb.Connection, cpf_colaborador: str) -> None:
+    """
+    Busca e exibe todas as tarefas PENDENTES/EM ANDAMENTO de um colaborador específico.
+    A função utiliza o CPF do colaborador logado para filtrar as tarefas na tabela
+    T_MNDSH_TAREFA, excluindo aquelas com status 'concluída'. Os resultados são exibidos
+    em formato de tabela e podem ser exportados.
+
+    Args:
+        conn: O objeto de conexão ativo com o banco de dados Oracle.
+        cpf_colaborador: O CPF do colaborador logado.
+
+    Returns:
+        None: A função gerencia a exibição e exportação.
+
+    Dependências:
+        - Funções: limpa_tela, imprimir_tabela, gerar_dataframe.
+        - Variáveis: margem.
+        - Módulo: pandas (pd).
+    """
     limpa_tela()
     cursor = conn.cursor()
     try:
@@ -1330,7 +1721,11 @@ def listar_tarefas_colaborador(conn, cpf_colaborador):
             input("Pressione ENTER para voltar...")
             return
         df = pd.DataFrame(tarefas, columns=["ID", "Título", "Descrição", "Status", "Prioridade", "Prazo", "Data Criação", "Data Última Modificação"])
-        imprimir_tabela(df, titulo=f"TAREFAS DE {nome}", tamanhos_wrap={"Título": 25, "Descrição": 40}, colunas_datas=["Prazo"], colunas_datetime=["Data Criação", "Data Última Modificação"])
+        imprimir_tabela(df, 
+                        titulo=f"TAREFAS DE {nome}", 
+                        tamanhos_wrap={"Título":25,"Descrição":40}, 
+                        colunas_datas=["Prazo"], 
+                        colunas_datetime=["Data Criação", "Data Última Modificação"])
         gerar_dataframe(df)
     except Exception as e:
         print(f"\n{margem} Erro ao listar tarefas: {e}\n")
@@ -1338,7 +1733,27 @@ def listar_tarefas_colaborador(conn, cpf_colaborador):
     finally:
         cursor.close()
 
-def atualizar_tarefa_colaborador(conn, cpf_colaborador, nome_colaborador):
+def atualizar_tarefa_colaborador(conn: oracledb.Connection, cpf_colaborador: str, nome_colaborador: str) -> None:
+    """
+    Permite ao colaborador alterar o status de suas tarefas (para 'em andamento' ou 'concluída').
+    A função lista apenas as tarefas NÃO CONCLUÍDAS do colaborador. Após a seleção do ID,
+    permite alterar o status, validando que a tarefa pertence ao colaborador e não está
+    concluída. A alteração é confirmada e registrada no banco.
+
+    Args:
+        conn: O objeto de conexão ativo com o banco de dados Oracle.
+        cpf_colaborador: O CPF do colaborador logado.
+        nome_colaborador: O nome do colaborador logado.
+
+    Returns:
+        None: A função realiza a ação de atualização.
+
+    Dependências:
+        - Funções: limpa_tela, imprimir_tabela, menu_opcoes2, perguntar_continuar,
+                   perguntar_continuar2.
+        - Variáveis: margem.
+        - Módulo: pandas (pd).
+    """
     while True:
         limpa_tela()
         cursor = conn.cursor()
@@ -1358,7 +1773,11 @@ def atualizar_tarefa_colaborador(conn, cpf_colaborador, nome_colaborador):
                 break
 
             df = pd.DataFrame(tarefas, columns=["ID", "Título", "Descrição", "Status", "Prioridade", "Prazo", "Data Criação", "Data Última Modificação"])
-            imprimir_tabela(df, titulo=f"TAREFAS A CONCLUIR DE {nome_colaborador}", tamanhos_wrap={"Título":25,"Descrição":40}, colunas_datas=["Prazo"], colunas_datetime=["Data Criação","Data Última Modificação"])
+            imprimir_tabela(df, 
+                            titulo=f"TAREFAS A CONCLUIR DE {nome_colaborador}",
+                            tamanhos_wrap={"Título":25,"Descrição":40},  
+                            colunas_datas=["Prazo"], 
+                            colunas_datetime=["Data Criação","Data Última Modificação"])
             
             id_tarefa = None
             while True:
@@ -1388,7 +1807,11 @@ def atualizar_tarefa_colaborador(conn, cpf_colaborador, nome_colaborador):
 
             limpa_tela()
             df_tarefa = pd.DataFrame([tarefa_completa], columns=["ID","Título","Descrição","Status","Prioridade","Prazo","Data Criação","Última Modificação"])
-            imprimir_tabela(df_tarefa, titulo=f"ATUALIZAR TAREFA - {nome_colaborador}", tamanhos_wrap={"Título":25,"Descrição":40}, colunas_datas=["Prazo"], colunas_datetime=["Data Criação","Última Modificação"])
+            imprimir_tabela(df_tarefa, 
+                            titulo=f"ATUALIZAR TAREFA - {nome_colaborador}", 
+                            tamanhos_wrap={"Título":25,"Descrição":40}, 
+                            colunas_datas=["Prazo"], 
+                            colunas_datetime=["Data Criação","Última Modificação"])
 
             novo_status = menu_opcoes2("\nSelecione o novo status:", ["Em Andamento", "Concluída", "Voltar"], ["EM ANDAMENTO", "CONCLUIDA", "VOLTAR"])
 
@@ -1424,10 +1847,32 @@ def atualizar_tarefa_colaborador(conn, cpf_colaborador, nome_colaborador):
 
 # ====== Registro de métricas e relatórios ======
 
-def registrar_metrica(conn, cpf_colaborador: str):
+def registrar_metrica(conn: oracledb.Connection, cpf_colaborador: str) -> None:
+    """
+    Permite ao colaborador registrar suas métricas diárias em cinco categorias:
+    Produtividade, Bem-estar emocional, Satisfação no trabalho, Qualidade do sono e Bem-estar físico.
+
+    A função primeiro verifica se já existe um registro para o colaborador na data atual (SYSDATE).
+    Em caso negativo, ela calcula métricas objetivas de tarefas e, em seguida, solicita notas subjetivas 
+    (0 a 10) para cada categoria,de maneira que se colaborador não responder ou não responder corretamente 
+    ele fica preso no loop ate que a resposta certa seja dada obrigando assim o colaborador a responder 
+    obrigatoriamente todas as questões, realizando múltiplas inserções na tabela T_MNDSH_METRICA.
+
+    Args:
+        conn: O objeto de conexão ativo com o banco de dados Oracle.
+        cpf_colaborador: O CPF do colaborador logado.
+
+    Returns:
+        None: A função realiza as inserções no banco.
+
+    Dependências:
+        - Funções: limpa_tela, valida_nota.
+        - Variáveis: margem.
+    """
     limpa_tela()
     print("===== REGISTRAR MÉTRICAS =====\n")
     print(f"{margem}Registro obrigatório diario (de preferência ao fim do expediente).")
+    print(f"\n{margem}Respostas apenas números inteiros de 0 a 10.")
     try:
         cursor = conn.cursor()
         cursor.execute("""
@@ -1531,23 +1976,84 @@ def registrar_metrica(conn, cpf_colaborador: str):
 
 # ====== FUNÇÕES DE CÁLCULO E FEEDBACK ======
 
-def bom(valor, metrica):
+def bom(valor: int | float, metrica: str) -> bool:
+    """
+    Verifica se o valor de uma métrica é considerado BOM (>= 7 ou <= 4).
+
+    A natureza da métrica (positiva ou negativa) é consultada no dicionário 
+    global metrica_positiva_negativa.
+
+    - Métrica 'positiva'  BOM se o valor for >= 7.
+    - Métrica 'negativa'  BOM se o valor for <= 4.
+
+    Args:
+        valor: O valor numérico da métrica.
+        metrica: A chave string da métrica.
+
+    Returns:
+        bool: True se o valor for considerado BOM, False caso contrário.
+    """
     if metrica_positiva_negativa.get(metrica, "positivo") == "positivo":
         return valor >= 7
     else:
         return valor <= 4
 
-def ruim(valor, metrica):
+def ruim(valor: int | float, metrica: str) -> bool:
+    """
+    Verifica se o valor de uma métrica é considerado RUIM (<= 4 ou >= 7).
+
+    A natureza da métrica (positiva ou negativa) é consultada no dicionário 
+    global metrica_positiva_negativa.
+
+    - Métrica 'positiva' RUIM se o valor for <= 4.
+    - Métrica 'negativa' RUIM se o valor for >= 7.
+
+    Args:
+        valor: O valor numérico da métrica.
+        metrica: A chave string da métrica.
+
+    Returns:
+        bool: True se o valor for considerado RUIM, False caso contrário.
+    """
     if metrica_positiva_negativa.get(metrica, "positivo") == "positivo":
         return valor <= 4
     else:
         return valor >= 7
 
-def adiciona_insight(cond, text, insights):
-        if cond:
-            insights.append(f"\n {margem} {text}\n")
+def adiciona_insight(cond: bool, text: str, insights: list) -> None:
+    """
+    Adiciona uma string de feedback à lista de insights se a condição for verdadeira.
 
-def gerar_feedback_e_insights(metricas: dict) -> tuple:
+    Args:
+        cond: Condição booleana que, se True, dispara a adição do insight.
+        text: A mensagem de feedback a ser adicionada.
+        insights: A lista de strings de insights, passada por referência.
+
+    Returns:
+        None: Modifica a lista 'insights' diretamente.
+    """
+    if cond:
+        insights.append(f"\n {margem} {text}\n")
+
+def gerar_feedback_e_insights(metricas: dict) -> tuple[str, list[str]]:
+    """
+    Gera feedback textual e uma lista de insights acionáveis baseados nas métricas individuais do colaborador.
+
+    A função calcula a proporção de conclusão de tarefas e, em seguida, aplica lógica de correlação
+    (usando as funções bom() e ruim()) para identificar relações entre métricas.
+
+    Args:
+        metricas: Dicionário contendo as métricas de um único colaborador.
+
+    Returns:
+        tuple[str, list[str]]: Uma tupla contendo:
+        1. Uma string formatada de feedback resumido.
+        2. Uma lista de strings de insights gerados por correlação.
+
+    Dependências:
+        - Funções: bom, ruim, adiciona_insight.
+        - Variáveis: margem.
+    """
     if not metricas:
         mensagem = f"\n {margem} Sem métricas disponíveis.\n"
         return mensagem, []
@@ -1690,7 +2196,25 @@ def gerar_feedback_e_insights(metricas: dict) -> tuple:
 
     return "\n".join(feedback), insights
 
-def gerar_feedback_e_insights_geral(metricas_media: dict) -> tuple:
+def gerar_feedback_e_insights_geral(metricas_media: dict) -> tuple[str, list[str]]:
+    """
+    Gera feedback textual e uma lista de insights acionáveis baseados nas métricas médias da equipe.
+
+    A função aplica a mesma lógica de correlação da análise individual, mas usando valores médios
+    para identificar tendências e problemas coletivos que o gestor deve abordar.
+
+    Args:
+        metricas_media: Dicionário contendo as médias das métricas de toda a equipe.
+
+    Returns:
+        tuple[str, list[str]]: Uma tupla contendo:
+        1. Uma string formatada de feedback resumido (médias da equipe).
+        2. Uma lista de strings de insights coletivos gerados por correlação.
+
+    Dependências:
+        - Funções: bom, ruim, adiciona_insight.
+        - Variáveis: margem.
+    """
     if not metricas_media:
         return f"\n {margem} Sem métricas disponíveis.\n", []
 
@@ -1835,6 +2359,21 @@ def gerar_feedback_e_insights_geral(metricas_media: dict) -> tuple:
     return "\n".join(feedback), insights
 
 def calcular_desempenho(df_metrica: pd.DataFrame, data_filtro: pd.Timestamp = None) -> pd.DataFrame:
+    """
+    Processa um DataFrame de métricas brutas (T_MNDSH_METRICA) e consolida os dados, 
+    calculando a média de cada variável numérica por colaborador (CPF) para um dia específico.
+
+    Como cada métrica é inserida em linhas separadas no banco, esta função agrupa essas entradas
+    pelo tipo de métrica e calcula a média para produzir um registro unificado por CPF para o dia.
+
+    Args:
+        df_metrica: DataFrame contendo as linhas de métricas brutas.
+        data_filtro: Objeto Timestamp para filtrar os dados por data.
+
+    Returns:
+        pd.DataFrame: Um DataFrame consolidado onde cada linha representa o resumo
+        de desempenho de um colaborador, com colunas nomeadas para as métricas.
+    """
     if df_metrica.empty:
         return pd.DataFrame()
 
@@ -1892,7 +2431,26 @@ def calcular_desempenho(df_metrica: pd.DataFrame, data_filtro: pd.Timestamp = No
         resultados.append(metricas)
     return pd.DataFrame(resultados)
 
-def relatorio_diario(conn, cpf: str = None):
+def relatorio_diario(conn: oracledb.Connection, cpf: str = None) -> None:
+    """
+    Gera o relatório diário de métricas para um colaborador específico, com base na data fornecida pelo usuário.
+
+    A função interage com o usuário para obter a data, busca os dados brutos no banco,
+    processa-os com calcular_desempenho(), formata o resultado e utiliza gerar_feedback_e_insights()
+    para apresentar a tabela e os insights de forma organizada.
+
+    Args:
+        conn: O objeto de conexão ativo com o banco de dados Oracle.
+        cpf: O CPF do colaborador logado.
+
+    Returns:
+        None: Gerencia a interação com o usuário e a exibição do relatório.
+
+    Dependências:
+        - Funções: limpa_tela, validar_data, data_datetime, imprimir_tabela, gerar_dataframe, 
+                   calcular_desempenho, gerar_feedback_e_insights, perguntar_continuar.
+        - Variáveis: colunas_renomear, grupos_relatorio_diario, margem.
+    """
     cursor = conn.cursor()
     cursor.execute("SELECT nm_colaborador FROM T_MNDSH_COLABORADOR WHERE nr_cpf = :cpf", {"cpf": cpf})
     resultado = cursor.fetchone()
@@ -1953,14 +2511,32 @@ def relatorio_diario(conn, cpf: str = None):
         df_exibir = df_exibir.drop(columns=['CPF'])
     limpa_tela()
     data_formatada = data_dt.strftime("%d/%m/%Y")
-    imprimir_tabela(df_exibir, titulo=f"Relatório Diário - {nome} CPF: {cpf} - Referência: {data_formatada}", tamanhos_wrap={"Título":25}, colunas_exibir=grupos_relatorio_diario)
+    imprimir_tabela(df_exibir, 
+                    titulo=f"Relatório Diário - {nome} CPF: {cpf} - Referência: {data_formatada}", 
+                    colunas_exibir=grupos_relatorio_diario)
     feedback, insights = gerar_feedback_e_insights(df_desempenho.iloc[0].to_dict())
     print(feedback)
     for insight in insights:
         print(insight)
     gerar_dataframe(df_exibir)
 
-def relatorio_mensal(conn, cpf: str, nome: str, mes: int = None, ano: int = None):
+def relatorio_mensal(conn: oracledb.Connection, cpf: str, nome: str, mes: int = None, ano: int = None) -> None:
+    """
+    Gera o relatório mensal de métricas para um colaborador específico.
+
+    Busca todos os dados de métricas do colaborador para o mês e ano especificados,
+    consolida-os em uma média mensal e exibe o resumo de desempenho e os insights individuais.
+
+    Args:
+        conn: O objeto de conexão ativo com o banco de dados Oracle.
+        cpf: O CPF do colaborador logado.
+        nome: O nome do colaborador.
+        mes: O mês de referência.
+        ano: O ano de referência.
+
+    Returns:
+        None: Gerencia a interação com o usuário e a exibição do relatório.
+    """
     while True:
         limpa_tela()
         print(f"\n===== RELATÓRIO MENSAL - {nome} (CPF: {cpf}) =====\n")
@@ -2027,14 +2603,31 @@ def relatorio_mensal(conn, cpf: str, nome: str, mes: int = None, ano: int = None
         df_exibir = df_exibir.drop(columns=['CPF'])
 
     limpa_tela()
-    imprimir_tabela(df_exibir, titulo=f"Relatório Mensal - {nome} CPF: {cpf} - Referência: {mes_int}/{ano_int}", colunas_exibir=grupos_relatorio_diario)
+    imprimir_tabela(df_exibir, 
+                    titulo=f"Relatório Mensal - {nome} CPF: {cpf} - Referência: {mes_int}/{ano_int}", 
+                    colunas_exibir=grupos_relatorio_diario)
     feedback, insights = gerar_feedback_e_insights(df_desempenho.iloc[0].to_dict())
     print(feedback)
     for insight in insights:
         print(insight)
     gerar_dataframe(df_exibir)
 
-def relatorio_geral(conn, mes: int = None, ano: int = None):
+def relatorio_geral(conn: oracledb.Connection, mes: int = None, ano: int = None) -> None:
+    """
+    Gera o relatório mensal de todas as métricas para todos os colaboradores da equipe.
+
+    Busca todos os dados de métricas da equipe para o mês e ano especificados, calcula
+    o desempenho consolidado (média de cada colaborador) e, em seguida, calcula a média
+    desses consolidados para gerar insights gerais sobre a saúde da equipe.
+
+    Args:
+        conn: O objeto de conexão ativo com o banco de dados Oracle.
+        mes: O mês de referência.
+        ano: O ano de referência.
+
+    Returns:
+        None: Gerencia a interação com o usuário e a exibição do relatório.
+    """
     limpa_tela()
     while True:
         limpa_tela()
@@ -2113,7 +2706,9 @@ def relatorio_geral(conn, mes: int = None, ano: int = None):
         grupos_relatorio_geral.append((titulo, colunas_do_grupo_completo))
 
     limpa_tela()
-    imprimir_tabela(df_exibir, titulo=f"Relatório Geral - Referência: {mes_int}/{ano_int}", colunas_exibir=grupos_relatorio_geral)
+    imprimir_tabela(df_exibir, 
+                    titulo=f"Relatório Geral - Referência: {mes_int}/{ano_int}", 
+                    colunas_exibir=grupos_relatorio_geral)
     try:
         total_concluidas = df_desempenho["tarefas_concluidas"].sum()
         total_geral = (
@@ -2134,9 +2729,17 @@ def relatorio_geral(conn, mes: int = None, ano: int = None):
         print(insight)
     gerar_dataframe(df_exibir)
 
-# ====================== MENU ADMINISTRADOR ======================
+# ===== MENU ADMINISTRADOR =====
 
-def menu_administrador(conn):
+def menu_administrador(conn: oracledb.Connection) -> None:
+    """
+    Implementa o menu principal e submenus para as ações administrativas.
+    Esta função é o ponto de controle para operações de CRUD de Colaboradores e Tarefas,
+    além de acesso aos diversos relatórios (Diário, Mensal, Geral) do sistema.
+
+    Args:
+        conn: O objeto de conexão ativo com o banco de dados Oracle.
+    """
     while True:
         escolha = menu_opcoes(
             "===== MENU ADMINISTRADOR =====\n",
@@ -2231,9 +2834,19 @@ def menu_administrador(conn):
             limpa_tela()
             break
 
-# ====================== MENU COLABORADOR ======================
+# ===== MENU COLABORADOR =====
 
-def menu_colaborador(conn):
+def menu_colaborador(conn: oracledb.Connection) -> None:
+    """
+    Implementa o menu de funcionalidades acessíveis ao colaborador (usuário comum).
+
+    O fluxo começa com a seleção do colaborador (simulando o login usando o buscar_colaborador()). Uma vez selecionado,
+    o usuário tem acesso às funcionalidades essenciais: gestão de tarefas pessoais,
+    registro de métricas e visualização de seus relatórios.
+
+    Args:
+        conn: O objeto de conexão ativo com o banco de dados Oracle.
+    """
     while True:  
         limpa_tela()
         colaborador = buscar_colaborador(conn, titulo_menu="MENU DO COLABORADOR")
@@ -2263,7 +2876,6 @@ def menu_colaborador(conn):
                 registrar_metrica(conn, cpf_colaborador)
 
             elif op == "rel_diario":
-
                 relatorio_diario(conn, cpf_colaborador)
 
             elif op == "rel_mensal":
