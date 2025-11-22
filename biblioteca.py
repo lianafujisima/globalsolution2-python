@@ -816,9 +816,8 @@ def listar_colaboradores(conn: oracledb.Connection) -> None:
                 limpa_tela()
                 df = pd.DataFrame(dados, columns=colunas)
                 grupos_personalizados = [
-                    ("DADOS PESSOAIS", ['Id', 'CPF', 'Nome', 'Data de nascimento', 'Sexo']),
-                    ("ENDEREÇO COMPLETO", ['CEP', 'Logradouro', 'Número', 'Bairro', 'Cidade', 'Estado']),
-                    ("VÍNCULO EMPREGATÍCIO", ['Salário', 'Cargo', 'Data de admissão', 'Data de demissão', 'Status', 'Data Criação', 'Data última modificação']),
+                    ("DADOS PESSOAIS", ['Id', 'CPF', 'Nome', 'Data de nascimento', 'Sexo', 'CEP', 'Logradouro', 'Número', 'Bairro', 'Cidade', 'Estado']),
+                    ("VÍNCULO EMPREGATÍCIO", ['Id', 'CPF', 'Nome', 'Salário', 'Cargo', 'Data de admissão', 'Data de demissão', 'Status', 'Data Criação', 'Data última modificação']),
                 ]
                 imprimir_tabela(df, 
                     titulo="LISTA DE COLABORADORES", 
@@ -866,9 +865,8 @@ def atualizar_colaborador(conn: oracledb.Connection) -> None:
             while True:
                 limpa_tela()
                 grupos_personalizados = [
-                    ("DADOS PESSOAIS", ['Id', 'CPF', 'Nome', 'Data de nascimento', 'Sexo']),
-                    ("ENDEREÇO COMPLETO", ['CEP', 'Logradouro', 'Número', 'Bairro', 'Cidade', 'Estado']),
-                    ("VÍNCULO EMPREGATÍCIO", ['Salário', 'Cargo', 'Data de admissão', 'Data de demissão', 'Status', 'Data Criação', 'Data última modificação']),
+                    ("DADOS PESSOAIS", ['Id', 'CPF', 'Nome', 'Data de nascimento', 'Sexo', 'CEP', 'Logradouro', 'Número', 'Bairro', 'Cidade', 'Estado']),
+                    ("VÍNCULO EMPREGATÍCIO", ['Id', 'CPF', 'Nome', 'Salário', 'Cargo', 'Data de admissão', 'Data de demissão', 'Status', 'Data Criação', 'Data última modificação']),
                 ]
                 df = pd.DataFrame([colaborador_dicionario.copy()]) 
                 df.rename(columns=mapeamento_colunas, inplace=True)
@@ -1163,9 +1161,8 @@ def excluir_colaborador(conn: oracledb.Connection) -> None:
                 break
             limpa_tela()
             grupos_personalizados = [
-                    ("DADOS PESSOAIS", ['Id', 'CPF', 'Nome', 'Data de nascimento', 'Sexo']),
-                    ("ENDEREÇO COMPLETO", ['CEP', 'Logradouro', 'Número', 'Bairro', 'Cidade', 'Estado']),
-                    ("VÍNCULO EMPREGATÍCIO", ['Salário', 'Cargo', 'Data de admissão', 'Data de demissão', 'Status', 'Data Criação', 'Data última modificação']),
+                    ("DADOS PESSOAIS", ['Id', 'CPF', 'Nome', 'Data de nascimento', 'Sexo', 'CEP', 'Logradouro', 'Número', 'Bairro', 'Cidade', 'Estado']),
+                    ("VÍNCULO EMPREGATÍCIO", ['Id', 'CPF', 'Nome', 'Salário', 'Cargo', 'Data de admissão', 'Data de demissão', 'Status', 'Data Criação', 'Data última modificação']),
                 ]
             df = pd.DataFrame([colaborador.copy()]) 
             df.rename(columns=mapeamento_colunas, inplace=True) 
